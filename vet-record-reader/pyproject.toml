@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "vet-record-reader"
+version = "0.1.0"
+description = "Maker Days 2026 prototype: a timeline of a pet's health from its veterinary records"
+authors = ["Ramsha Khan"]
+readme = "PROJECT.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+google-genai = "*"
+google-cloud-bigquery = "*"
+db-dtypes = "*"
+pytz = "*"
+pydantic = "*"
+pandas = "*"
+ipykernel = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
