@@ -34,7 +34,7 @@ from pydantic import BaseModel
 BASE_DIR = Path(__file__).resolve().parent   # paths below are relative to this file, not to where you run it from
 
 # =============================== Config: every input in one place ===============================
-CONTRACT_ID = "2bd1ee7b-7f56-4cc4-8163-d761027049fd"       # the test contract (Emma)
+CONTRACT_ID = "918a7ab3-809b-41d0-be28-1cc4a11d56fb"       # the test contract (Emma)
 
 # --- Google Cloud / Gemini ---
 GEMINI_PROJECT = "hedvig-coruscant"
@@ -645,6 +645,12 @@ def stage3(contract_id, contract_row, contract_files, journals, file_bytes, outp
     record_json["current_claim"] = {"claim_id": current_claim_id, "claim_types_by_cost": list(claims.iloc[-1]["claim_types_by_cost"])}
     record_json["files"] = file_index
     record_json["claims_text"] = claims_text
+    # the contract's claims as data (what the page reads), oldest first; the same facts as claims_text
+    record_json["claims"] = [{"claim_id": c["claim_id"], "current": c["claim_id"] == current_claim_id,
+                              "notification_date": str(c["claim_notification_date"]), "date_of_loss": str(c["claim_date_of_loss"]),
+                              "outcome": c["claim_outcome"] if pd.notna(c["claim_outcome"]) else None,
+                              "claim_types": list(c["claim_types_by_cost"]),
+                              "attachments": attachments_of.get(c["claim_id"], [])} for _, c in claims.iterrows()]
 
     out = output_dir / "record.json"
     out.write_text(json.dumps(record_json, indent=2, ensure_ascii=False, default=str), encoding="utf-8")

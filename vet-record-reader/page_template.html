@@ -1,0 +1,581 @@
+<title>Pet Health Timeline</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: Hope-like frame (dark icon rail, claim header, tabs); the History tab holds filters | timeline + detail + groups */
+:root {
+  --bg: hsl(0 0% 94%); --card: hsl(0 0% 98%); --card2: #fff; --fg: hsl(0 0% 7%); --mut: hsl(0 0% 40%); --mut2: hsl(0 0% 55%);
+  --line: hsla(0,0%,7%,.09); --line2: hsla(0,0%,7%,.18); --rail: hsl(0 0% 7%); --rail-fg: hsl(0 0% 71%);
+  --accent: #5b21b6; --accent-bg: #ede9fe; --this: #0a0a0a; --this-fg: #fff; --dot: hsl(0 0% 60%);
+  --warn: #d97706; --warn-bg: #fef3c7; --warn-fg: #92400e; --bad: #dc2626; --bad-bg: #fee2e2; --bad-fg: #991b1b;
+  --ok-bg: #dcfce7; --ok-fg: #166534; --hover: hsla(0,0%,7%,.06); --axis: hsl(0 0% 78%);
+  --font: 'Geist', ui-sans-serif, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: hsl(0 0% 11%); --card: hsl(0 0% 15%); --card2: hsl(0 0% 18%); --fg: hsl(0 0% 93%); --mut: hsl(0 0% 65%); --mut2: hsl(0 0% 52%);
+  --line: hsla(0,0%,100%,.1); --line2: hsla(0,0%,100%,.2); --rail: hsl(0 0% 5%); --rail-fg: hsl(0 0% 60%);
+  --accent: #a78bfa; --accent-bg: #2e1065; --this: #f4f4f5; --this-fg: #0a0a0a; --dot: hsl(0 0% 48%);
+  --warn: #f59e0b; --warn-bg: #451a03; --warn-fg: #fcd34d; --bad: #f87171; --bad-bg: #450a0a; --bad-fg: #fca5a5;
+  --ok-bg: #052e16; --ok-fg: #86efac; --hover: hsla(0,0%,100%,.08); --axis: hsl(0 0% 35%); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: hsl(0 0% 11%); --card: hsl(0 0% 15%); --card2: hsl(0 0% 18%); --fg: hsl(0 0% 93%); --mut: hsl(0 0% 65%); --mut2: hsl(0 0% 52%);
+  --line: hsla(0,0%,100%,.1); --line2: hsla(0,0%,100%,.2); --rail: hsl(0 0% 5%); --rail-fg: hsl(0 0% 60%);
+  --accent: #a78bfa; --accent-bg: #2e1065; --this: #f4f4f5; --this-fg: #0a0a0a; --dot: hsl(0 0% 48%);
+  --warn: #f59e0b; --warn-bg: #451a03; --warn-fg: #fcd34d; --bad: #f87171; --bad-bg: #450a0a; --bad-fg: #fca5a5;
+  --ok-bg: #052e16; --ok-fg: #86efac; --hover: hsla(0,0%,100%,.08); --axis: hsl(0 0% 35%); color-scheme: dark }
+
+* { box-sizing: border-box }
+html, body { height: 100% }
+body { margin: 0; background: var(--rail); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.4; -webkit-font-smoothing: antialiased }
+button { font-family: inherit; cursor: pointer; color: inherit }
+a { color: inherit; text-decoration: underline; text-underline-offset: 3px }
+.i { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0 }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+.app { display: flex; min-height: 100% }
+.side { width: 60px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding-block: 28px; gap: 26px; color: var(--rail-fg); background: var(--rail) }
+.side .i { width: 20px; height: 20px }
+.side .on { color: #fff }
+.side .logo { margin-top: auto; width: 28px; height: 28px; border-radius: 999px; border: 2px solid #fff; color: #fff; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center }
+.main { flex: 1; min-width: 0; background: var(--bg); display: flex; flex-direction: column }
+.content { flex: 1; padding-block: 20px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 14px }
+.foot { background: var(--card); border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); flex-wrap: wrap }
+.sec { color: var(--mut) }
+.h-btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: var(--hover); font-size: 14px }
+.h-btn.lg { height: 38px; padding: 0 14px; font-size: 15px; border-radius: 10px }
+.h-btn.dark { background: var(--this); color: var(--this-fg) }
+.h-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px }
+.kv { display: flex; flex-direction: column; gap: 2px }
+.kv .k { font-size: 12px }
+.kv .v { font-size: 15px; color: var(--mut) }
+.tabs { display: flex; gap: 6px; background: var(--line); border-radius: 12px; padding: 4px; overflow-x: auto }
+.tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 10px; border: 0; background: none; border-radius: 10px; font-size: 15px; white-space: nowrap; color: var(--mut) }
+.tab.on { background: var(--this); color: var(--this-fg) }
+.tag { padding: 1px 8px; border-radius: 8px; font-size: 13px; background: var(--card2); border: 1px solid var(--line2); color: var(--fg) }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap }
+.head .t { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+.head .t .big { font-size: 22px }
+.chk { display: flex; align-items: center; gap: 8px; font-size: 14px }
+.orb { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; display: inline-block }
+
+/* History tab */
+.hist { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 14px }
+@media (max-width: 860px) { .hist { grid-template-columns: 1fr } }
+.filters { background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 14px; align-self: start; position: sticky; top: 12px; min-width: 0 }
+@media (max-width: 860px) { .filters { position: static } }
+.filters h4 { margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--mut) }
+.filters label.c { display: flex; align-items: flex-start; gap: 8px; font-size: 13.5px; padding: 2px 0; cursor: pointer; min-width: 0 }
+.filters label.c input { flex-shrink: 0; margin-top: 3px }
+.filters label.c span.l { flex: 1; min-width: 0; overflow-wrap: anywhere }
+.filters label.c span.n { color: var(--mut2); margin-left: auto; font-variant-numeric: tabular-nums; flex-shrink: 0 }
+.filters input[type=text], .filters input[type=date] { width: 100%; max-width: 100%; min-width: 0; font: inherit; font-size: 13.5px; padding: 6px 8px; border: 1px solid var(--line2); border-radius: 8px; background: var(--card); color: var(--fg) }
+.filters .dates { display: flex; flex-direction: column; gap: 6px }
+.filters .dates > div { display: flex; align-items: center; gap: 6px }
+.filters .dates > div span { font-size: 12px; color: var(--mut); width: 34px; flex-shrink: 0 }
+.filters .small { font-size: 12px; color: var(--mut) }
+.filters .code { font-size: 11px; color: var(--mut2); word-break: break-all; display: block }
+.s-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px; font-size: 13px; font-weight: 500; border: 1px solid var(--line2); white-space: nowrap; background: var(--card2) }
+.s-btn:hover { background: var(--hover) }
+.s-btn.sq { width: 28px; padding: 0 }
+.s-card { background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 14px; min-width: 0 }
+.s-card h3 { margin: 0; font-size: 15px; font-weight: 600 }
+.mut { color: var(--mut) }
+.lg { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--mut) }
+.lg svg { width: 14px; height: 14px; flex-shrink: 0 }
+.badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap; background: var(--hover) }
+.b-this { background: var(--accent); color: #fff }
+.b-warn { background: var(--warn-bg); color: var(--warn-fg) }
+.b-bad { background: var(--bad-bg); color: var(--bad-fg) }
+.b-ok { background: var(--ok-bg); color: var(--ok-fg) }
+.b-acc { background: var(--accent-bg); color: var(--accent) }
+.chip { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 999px; font-size: 12.5px; border: 1px solid var(--line2); background: var(--card); white-space: nowrap }
+.chip:hover { background: var(--hover) }
+.chip.on { background: var(--this); color: var(--this-fg); border-color: var(--this) }
+.chip.off { opacity: .45 }
+
+/* timeline: lane labels fixed at the left, the drawing scrolls sideways */
+.tl-box { display: grid; grid-template-columns: 58px minmax(0, 1fr); margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--card) }
+.tl-lanes { display: flex; flex-direction: column; justify-content: space-between; padding: 22px 0 26px 10px; font-size: 11.5px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--mut); border-right: 1px solid var(--line) }
+.tl-wrap { overflow-x: auto; overflow-y: hidden; min-width: 0 }
+svg.tl { display: block; height: 150px; font-family: var(--font) }
+svg.tl text { fill: var(--mut); font-size: 11px }
+svg.tl .lane { stroke: var(--axis); stroke-width: 2 }
+svg.tl .tick { stroke: var(--axis); stroke-width: 1 }
+svg.tl .ytick { stroke: var(--mut2); stroke-width: 1 }
+svg.tl .dot { fill: var(--dot); stroke: var(--card); stroke-width: 1.5; cursor: pointer }
+svg.tl .dot.this { fill: var(--accent) }
+svg.tl .dot.flag { stroke: var(--warn); stroke-width: 3 }
+svg.tl .dot.off { opacity: .22 }
+svg.tl .dot.sel { stroke: var(--fg); stroke-width: 3 }
+svg.tl .dot:hover { stroke: var(--fg); stroke-width: 2 }
+svg.tl .n { fill: var(--card2); font-size: 10px; font-weight: 600; pointer-events: none }
+svg.tl .clm { fill: var(--card2); stroke: var(--mut); stroke-width: 1.5; cursor: pointer }
+svg.tl .clm.this { fill: var(--accent); stroke: var(--accent) }
+svg.tl .clm.sel { stroke: var(--fg); stroke-width: 2.5 }
+svg.tl .clm:hover { stroke: var(--fg); stroke-width: 2.5 }
+svg.tl .span { fill: var(--accent); opacity: .1 }
+svg.tl .vline { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 3 }
+svg.tl .lbl { font-size: 10.5px }
+svg.tl .lbl.this { fill: var(--accent); font-weight: 600 }
+
+/* detail */
+.visit { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--card); display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+.visit .vh { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+.visit .vh b { font-size: 15px }
+.visit .meta { display: flex; gap: 14px 22px; flex-wrap: wrap; font-size: 13px; color: var(--mut) }
+.sect { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 4px 12px; font-size: 13.5px }
+@media (max-width: 560px) { .sect { grid-template-columns: 1fr } }
+.sect .sk { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--mut); padding-top: 3px }
+.sect ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px }
+.sect li { display: flex; flex-direction: column; gap: 1px }
+.q { color: var(--mut); font-size: 12.5px }
+.q::before { content: '”' } .q::after { content: '”' }
+.sv { color: var(--mut); font-size: 12.5px }
+.line { display: flex; gap: 6px; align-items: center; flex-wrap: wrap }
+.empty { color: var(--mut); font-size: 14px; padding: 10px 0 }
+table.t { width: 100%; border-collapse: collapse; font-size: 13.5px }
+table.t th { text-align: left; font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--mut); padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line2); white-space: nowrap }
+table.t td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top }
+table.t tr.sel td { background: var(--accent-bg) }
+table.t tr.click { cursor: pointer }
+table.t tr.click:hover td { background: var(--hover) }
+.tbl-wrap { overflow-x: auto }
+.groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin-top: 10px }
+.group { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--card); display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+.group .gh { display: flex; justify-content: space-between; gap: 8px; align-items: baseline }
+.group .gh b { font-size: 14px }
+.group .chips { display: flex; gap: 4px; flex-wrap: wrap }
+.group.off { opacity: .45 }
+.note { font-size: 12.5px; color: var(--mut) }
+@media (prefers-reduced-motion: no-preference) { .chip, .tab { transition: all .12s } }
+</style>
+
+<div class="app">
+<nav class="side" aria-label="Hope">
+  <svg class="i" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>
+  <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <svg class="i" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+  <svg class="i on" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+  <svg class="i" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+  <div class="logo">H</div>
+</nav>
+
+<div class="main">
+<div class="content">
+
+  <div class="head">
+    <div class="t">
+      <span class="big">Claim</span>
+      <span class="sec big" id="claimDate">—</span>
+      <span class="tag" id="claimStatus">—</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <label class="h-btn" for="loadFile" style="cursor:pointer">Load another record.json</label>
+      <input type="file" id="loadFile" accept=".json,application/json" hidden>
+      <button class="h-btn">Attest limit</button>
+      <button class="h-btn">Restrict access</button>
+      <button class="h-btn">Assign admin</button>
+      <button class="h-btn dark"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg>Schedule task</button>
+    </div>
+  </div>
+
+  <div class="h-card" style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:18px" id="petName">—</span>
+        <span class="tag" id="petTag">—</span>
+        <span class="sec" style="font-size:13px" id="contractId">—</span>
+      </div>
+      <div style="display:flex;gap:28px;flex-wrap:wrap" id="petFacts"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+      <div class="chk"><span class="orb" style="background:var(--warn)"></span><span>Journal</span><span class="sec" id="journalCheck">—</span></div>
+      <div class="chk"><span class="orb" style="background:var(--dot)"></span><span>Files read</span><span class="sec" id="filesCheck">—</span></div>
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist" title="Prototype: only the History tab is built">
+    <button class="tab" role="tab">Overview</button>
+    <button class="tab" role="tab">Notes</button>
+    <button class="tab" role="tab">Reserves</button>
+    <button class="tab" role="tab">Payouts</button>
+    <button class="tab" role="tab">Files <span class="tag" id="filesCount">0</span></button>
+    <button class="tab" role="tab">Items</button>
+    <button class="tab on" role="tab" aria-selected="true">History <span class="tag" id="visitsCount">0</span></button>
+    <button class="tab" role="tab">Recourse</button>
+  </div>
+
+  <div class="hist">
+    <aside class="filters" aria-label="Filters">
+      <div>
+        <h4>Keyword</h4>
+        <input type="text" id="fKeyword" placeholder="skin, allergy, diarré, Giardia…">
+        <div class="small" style="margin-top:4px">Matches diagnoses, symptoms, findings, vet comments, reasons and condition groups.</div>
+      </div>
+      <div>
+        <h4>Date range</h4>
+        <div class="dates"><div><span>from</span><input type="date" id="fFrom"></div><div><span>to</span><input type="date" id="fTo"></div></div>
+      </div>
+      <div><h4>Condition group</h4><div id="fGroups"></div></div>
+      <div><h4>Claim type</h4><div id="fTypes"></div></div>
+      <div><h4>Diagnosis</h4><div id="fDiag"></div></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <button class="s-btn" id="fClear">Clear filters</button>
+        <span class="small" id="fSummary"></span>
+      </div>
+    </aside>
+
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div class="s-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <h3 id="tlTitle">Journal</h3>
+            <span class="mut" id="tlSub"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <span class="lg"><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5" fill="var(--dot)"/></svg>Visit</span>
+            <span class="lg"><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5" fill="var(--accent)"/></svg>Visit on this claim</span>
+            <span class="lg"><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="4.5" fill="var(--dot)" stroke="var(--warn)" stroke-width="2.5"/></svg>Flagged for review</span>
+            <span class="lg"><svg viewBox="0 0 14 14"><rect x="3" y="3" width="8" height="8" fill="var(--card2)" stroke="var(--mut)" stroke-width="1.5" transform="rotate(45 7 7)"/></svg>Claim (date of loss)</span>
+            <span class="lg"><svg viewBox="0 0 14 14"><rect x="3" y="3" width="8" height="8" fill="var(--accent)" transform="rotate(45 7 7)"/></svg>This claim</span>
+            <span style="display:inline-flex;gap:4px;align-items:center"><button class="s-btn sq" id="zOut" title="Zoom out">−</button><button class="s-btn sq" id="zIn" title="Zoom in">+</button><button class="s-btn" id="zFit" title="Fit the whole period in view">Fit</button></span>
+          </div>
+        </div>
+        <div class="tl-box">
+          <div class="tl-lanes"><span>Visits</span><span>Claims</span></div>
+          <div class="tl-wrap" id="tlWrap"><svg class="tl" id="tl" role="img" aria-label="Timeline of visits and claims"></svg></div>
+        </div>
+        <div class="note">Scroll sideways to move along the timeline. Click a dot (visit) or a diamond (claim) to see that date below; a number in a dot means several visits that day. Visits outside the filter are faded.</div>
+      </div>
+
+      <div class="s-card" id="detail">
+        <div class="empty">Click a visit on the timeline.</div>
+      </div>
+
+      <div class="s-card">
+        <h3>Condition groups</h3>
+        <div class="note">Related symptoms and diagnoses grouped by the claim types the reader attached to them. A fixed list in this page, not a model decision.</div>
+        <div class="groups" id="groups"></div>
+      </div>
+
+      <div class="s-card">
+        <h3>Claims on this contract</h3>
+        <div class="tbl-wrap"><table class="t" id="claimsTable"></table></div>
+      </div>
+
+      <div class="s-card">
+        <h3>Files read</h3>
+        <div class="tbl-wrap"><table class="t" id="filesTable"></table></div>
+        <div class="note" id="certNote"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="foot">
+  <button class="h-btn lg">Pet invoice calculations</button>
+  <button class="h-btn lg">Payout calculator</button>
+  <button class="h-btn lg">Add new note</button>
+  <button class="h-btn lg">Chat</button>
+</div>
+</div>
+</div>
+
+<script id="record" type="application/json">__RECORD_JSON__</script>
+<script>
+(function () {
+'use strict';
+// ---- condition groups: claim types from Desiree's prompt; the keywords serve the search box only ----
+const GROUPS = [
+  { id: 'digestive', name: 'Digestive', types: ['Non Chronic gastrointestinal Issues', 'Chronic gastrointestinal Issues', 'Pancreatitis'], kw: ['diarr', 'kräk', 'vomit', 'gastro', 'mage', 'magsäck', 'tarm', 'avföring', 'stomach', 'bowel', 'anorexi'] },
+  { id: 'parasites', name: 'Parasites and infections', types: ['Intestinal Parasites', 'Infections'], kw: ['giardia', 'parasit', 'infektion', 'infection', 'worm'] },
+  { id: 'ingestion', name: 'Swallowed objects and poisoning', types: ['Foreign Body Ingestion', 'Poisoning'], kw: ['främmande kropp', 'foreign body', 'förgift', 'poison', 'svalt', 'snus', 'tablett'] },
+  { id: 'skin', name: 'Skin and allergy', types: ['Skin Conditions and Allergies', 'Ear infections'], kw: ['klåda', 'itch', 'allerg', 'skin', 'eksem', 'öron', 'otit', 'päls', 'fur'] },
+  { id: 'joints', name: 'Joints and bones', types: ['Arthritis and Joint issues', 'Cruciate Ligament Injuries', 'Fractures and Broken Bones', 'Claw Injury'], kw: ['hälta', 'lame', 'joint', 'korsband', 'fraktur', 'fracture', 'claw', 'artros'] },
+  { id: 'teeth', name: 'Teeth', types: ['Dental Issues', 'Tooth Fracture and Baby Teeth'], kw: ['tand', 'tooth', 'teeth', 'dental', 'forl'] },
+  { id: 'eyes', name: 'Eyes', types: ['Eye Problems'], kw: ['öga', 'ögon', 'eye', 'cornea', 'konjunktivit'] },
+  { id: 'urinary', name: 'Urinary and kidney', types: ['Urinary Tract Infections', 'Kidney and Liver disease'], kw: ['urin', 'urinary', 'njur', 'kidney', 'lever', 'liver', 'blåsa', 'bladder'] },
+  { id: 'heart', name: 'Heart and breathing', types: ['Heart Conditions', 'Asthma'], kw: ['hjärt', 'heart', 'astma', 'asthma', 'hosta', 'cough'] },
+  { id: 'hormones', name: 'Hormones', types: ['Diabetes', 'Endocrine Disorders'], kw: ['diabet', 'sköldkörtel', 'thyroid', 'cushing', 'addison', 'endokrin'] },
+  { id: 'nervous', name: 'Nervous system', types: ['Seizures and Neurological Disorders'], kw: ['kramp', 'seizure', 'epilep', 'neurolog'] },
+  { id: 'cancer', name: 'Cancer', types: ['Cancer'], kw: ['tumör', 'tumor', 'cancer', 'lymfom', 'lymphoma'] },
+  { id: 'behaviour', name: 'Behaviour', types: ['Behavior Therapy'], kw: ['beteende', 'behavio', 'ångest', 'anxiety'] },
+  { id: 'routine', name: 'Routine and other', types: ['Default', 'Castration', 'Dystocia', 'Last Rest', 'Plastic Surgery Vet'], kw: ['vaccin', 'kastr', 'castrat', 'avliv', 'euthan'] },
+];
+const FLAGS_WARN = ['possible_other_animal', 'conflicting_entries', 'ambiguous_date', 'unreadable', 'truncated', 'likely_copy_forward', 'unclear_abbreviation'];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+const dayMs = 86400000;
+const toT = d => new Date(d + 'T00:00:00').getTime();
+
+let R, visits, claims, state;
+
+function setRecord(rec) {
+  R = rec;
+  visits = (R.visits || []).filter(v => v.date).slice().sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  claims = (R.claims || []).slice().sort((a, b) => (a.date_of_loss || '').localeCompare(b.date_of_loss || ''));
+  for (const v of visits) {
+    v._types = new Set([...v.diagnoses, ...v.symptoms, ...v.procedures].map(x => x.claim_relevance && x.claim_relevance.primary).filter(Boolean));
+    v._hedvig = {};
+    for (const x of [...v.diagnoses, ...v.symptoms, ...v.procedures]) if (x.claim_relevance) v._hedvig[x.claim_relevance.primary] = x.claim_relevance.primary_hedvig;
+    v._text = [v.reason_for_visit, ...v.diagnoses.map(d => d.text + ' ' + (d.text_sv || '')), ...v.symptoms.map(s => s.text + ' ' + (s.text_sv || '')),
+      ...v.findings.map(f => f.text + ' ' + (f.text_sv || '')), ...v.vet_comments.map(c => c.text + ' ' + (c.text_sv || '')),
+      ...v.procedures.map(p => p.text), ...v.medications.map(m => m.name), v.clinic].join(' ').toLowerCase();
+    // group membership comes from the reader's claim types only
+    v._groups = new Set(GROUPS.filter(g => g.types.some(t => v._types.has(t))).map(g => g.id));
+    v._flag = v.review_flags.some(f => FLAGS_WARN.includes(f));
+    v._claim = claimForDate(v.date);
+  }
+  state = { kw: '', from: '', to: '', groups: new Set(), types: new Set(), diag: new Set(), sel: null, ppd: 10, scrolled: false };
+  renderHeader(); renderFilters(); renderAll();
+}
+
+// the claim a visit belongs to: the claim with the latest date of loss on or before the visit date
+function claimForDate(date) {
+  let best = null;
+  for (const c of claims) if (c.date_of_loss && c.date_of_loss <= date && (!best || c.date_of_loss > best.date_of_loss)) best = c;
+  return best;
+}
+const isCurrent = v => !!(v._claim && v._claim.current);
+
+function passes(v) {
+  if (state.from && v.date < state.from) return false;
+  if (state.to && v.date > state.to) return false;
+  if (state.groups.size && ![...state.groups].some(g => v._groups.has(g))) return false;
+  if (state.types.size && ![...state.types].some(t => v._types.has(t))) return false;
+  if (state.diag.size && !v.diagnoses.some(d => state.diag.has(d.text))) return false;
+  if (state.kw) {
+    const k = state.kw.toLowerCase();
+    const kwGroups = GROUPS.filter(g => g.name.toLowerCase().includes(k) || g.kw.some(w => w.includes(k) || k.includes(w)));
+    if (!v._text.includes(k) && !kwGroups.some(g => v._groups.has(g.id))) return false;
+  }
+  return true;
+}
+
+// ---- header ----
+function renderHeader() {
+  const cur = claims.find(c => c.current);
+  document.getElementById('claimDate').textContent = cur ? fmt(cur.date_of_loss) : (R.current_claim ? R.current_claim.claim_id.slice(0, 8) : '—');
+  document.getElementById('claimStatus').textContent = cur ? (cur.outcome || 'Open') : 'Open';
+  const names = {};
+  for (const m of R.record_meta || []) if (m.animal_name) names[m.animal_name] = (names[m.animal_name] || 0) + 1;
+  const main = Object.entries(names).sort((a, b) => b[1] - a[1])[0];
+  const metaMain = main ? (R.record_meta || []).find(m => m.animal_name === main[0] && m.chip_number) || (R.record_meta || []).find(m => m.animal_name === main[0]) : null;
+  const others = Object.keys(names).filter(n => !main || n !== main[0]);
+  document.getElementById('petName').textContent = main ? main[0] : 'Pet';
+  document.getElementById('petTag').textContent = metaMain && metaMain.species ? metaMain.species[0].toUpperCase() + metaMain.species.slice(1) : 'Pet';
+  document.getElementById('contractId').textContent = 'Contract ' + (R.contract_id || '');
+  const facts = [
+    ['Chip number', metaMain && metaMain.chip_number || '—'],
+    ['Visits in journal', visits.length + (visits.length ? ' · ' + fmt(visits[0].date) + ' to ' + fmt(visits[visits.length - 1].date) : '')],
+    ['Clinics', [...new Set(visits.map(v => v.clinic).filter(Boolean))].length],
+    ['Other names in files', others.length ? others.join(', ') : 'none'],
+  ];
+  document.getElementById('petFacts').innerHTML = facts.map(([k, v]) => `<div class="kv"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('');
+  const flagged = visits.filter(v => v._flag).length;
+  const files = Object.keys(R.files || {}).length;
+  document.getElementById('journalCheck').textContent = `${visits.length} visits · ${flagged} flagged for review`;
+  document.getElementById('filesCheck').textContent = `${files} files · ${(R.certificates || []).length} certificate${(R.certificates || []).length === 1 ? '' : 's'}`;
+  document.getElementById('filesCount').textContent = files;
+  document.getElementById('visitsCount').textContent = visits.length;
+}
+
+// ---- filters ----
+function countBy(fn) { const m = new Map(); for (const v of visits) for (const k of fn(v)) m.set(k, (m.get(k) || 0) + 1); return m; }
+function checkList(el, items, set, labelFn) {
+  el.innerHTML = items.map(([k, n]) => `<label class="c"><input type="checkbox" value="${esc(k)}"${set.has(k) ? ' checked' : ''}><span class="l">${labelFn ? labelFn(k) : esc(k)}</span><span class="n">${n}</span></label>`).join('') || '<div class="small">none</div>';
+  el.querySelectorAll('input').forEach(i => i.addEventListener('change', () => { i.checked ? set.add(i.value) : set.delete(i.value); renderAll(); }));
+}
+function renderFilters() {
+  const gCounts = countBy(v => v._groups);
+  checkList(document.getElementById('fGroups'), GROUPS.filter(g => gCounts.has(g.id)).map(g => [g.id, gCounts.get(g.id)]), state.groups, id => esc(GROUPS.find(g => g.id === id).name));
+  const tCounts = countBy(v => v._types);
+  const hedvig = {}; for (const v of visits) Object.assign(hedvig, v._hedvig);
+  checkList(document.getElementById('fTypes'), [...tCounts].sort((a, b) => b[1] - a[1]), state.types, t => `${esc(t)}<span class="code">${esc(hedvig[t] || '')}</span>`);
+  const dCounts = countBy(v => new Set(v.diagnoses.map(d => d.text)));
+  checkList(document.getElementById('fDiag'), [...dCounts].sort((a, b) => b[1] - a[1]), state.diag);
+  const kw = document.getElementById('fKeyword'), from = document.getElementById('fFrom'), to = document.getElementById('fTo');
+  kw.value = state.kw; from.value = state.from; to.value = state.to;
+  if (visits.length) { from.min = to.min = visits[0].date; from.max = to.max = visits[visits.length - 1].date; }
+  kw.oninput = () => { state.kw = kw.value.trim(); renderAll(); };
+  from.onchange = () => { state.from = from.value; renderAll(); };
+  to.onchange = () => { state.to = to.value; renderAll(); };
+  document.getElementById('fClear').onclick = () => { state.kw = state.from = state.to = ''; state.groups.clear(); state.types.clear(); state.diag.clear(); renderFilters(); renderAll(); };
+  document.getElementById('zIn').onclick = () => { state.ppd = Math.min(40, state.ppd * 1.5); renderAll(); };
+  document.getElementById('zOut').onclick = () => { state.ppd = Math.max(0.5, state.ppd / 1.5); renderAll(); };
+  document.getElementById('zFit').onclick = () => { state.ppd = 0; renderAll(); };
+}
+
+// ---- everything that depends on the filter or the selection ----
+function renderAll() {
+  const on = visits.filter(passes);
+  const anyFilter = state.kw || state.from || state.to || state.groups.size || state.types.size || state.diag.size;
+  document.getElementById('fSummary').textContent = anyFilter ? `${on.length} of ${visits.length} visits match` : `${visits.length} visits`;
+  document.getElementById('tlSub').textContent = visits.length ? `${visits.length} visits · ${fmt(visits[0].date)} to ${fmt(visits[visits.length - 1].date)} · ${claims.length} claims` : 'no dated visits';
+  renderTimeline(on); renderDetail(); renderGroups(on); renderClaims(); renderFiles();
+}
+
+function renderTimeline(on) {
+  const svg = document.getElementById('tl'), wrap = document.getElementById('tlWrap');
+  const dates = [...visits.map(v => v.date), ...claims.map(c => c.date_of_loss).filter(Boolean), ...claims.map(c => c.notification_date).filter(Boolean)].sort();
+  if (!dates.length) { svg.innerHTML = ''; return; }
+  const L = 30, Rm = 30, H = 150, YV = 42, YC = 108;      // lanes: visits at YV, claims at YC
+  const t0 = toT(dates[0]) - 20 * dayMs, t1 = toT(dates[dates.length - 1]) + 20 * dayMs;
+  const days = (t1 - t0) / dayMs;
+  let ppd = state.ppd;
+  if (!ppd) ppd = Math.max(0.3, (wrap.clientWidth - L - Rm) / days);   // "Fit": the whole period in view
+  const W = Math.round(L + days * ppd + Rm);
+  const x = t => L + (t - t0) / dayMs * ppd;
+  const onIds = new Set(on.map(v => v.id));
+  let s = `<line class="lane" x1="${L}" y1="${YV}" x2="${W - Rm}" y2="${YV}"/><line class="lane" x1="${L}" y1="${YC}" x2="${W - Rm}" y2="${YC}"/>`;
+  // month ticks between the lanes; labels every month, every 3rd or every 6th depending on room; years in bold
+  const d = new Date(t0); d.setDate(1); d.setHours(0, 0, 0, 0); d.setMonth(d.getMonth() + 1);
+  const pxPerMonth = ppd * 30.4, step = pxPerMonth > 44 ? 1 : pxPerMonth > 16 ? 3 : 6;
+  for (; d.getTime() < t1; d.setMonth(d.getMonth() + 1)) {
+    const xx = x(d.getTime()), major = d.getMonth() === 0;
+    if (!(major || d.getMonth() % step === 0)) continue;
+    s += `<line class="tick" x1="${xx}" y1="${YV + 10}" x2="${xx}" y2="${YC - 10}"/>`;
+    s += `<text x="${xx}" y="${(YV + YC) / 2 + 4}" text-anchor="middle"${major ? ' font-weight="600"' : ''}>${major ? d.getFullYear() : d.toLocaleDateString('en-GB', { month: 'short' })}</text>`;
+  }
+  // the current claim: shaded span from date of loss to notification, dashed line through both lanes, label
+  const cur = claims.find(c => c.current);
+  if (cur && cur.date_of_loss) {
+    const xa = x(toT(cur.date_of_loss)), xb = cur.notification_date ? x(toT(cur.notification_date)) : xa + 2;
+    s += `<rect class="span" x="${xa}" y="${YV - 16}" width="${Math.max(2, xb - xa)}" height="${YC - YV + 32}"/>`;
+    s += `<line class="vline" x1="${xa}" y1="${YV - 16}" x2="${xa}" y2="${YC + 16}"/>`;
+    s += `<text class="lbl this" x="${xa}" y="${YV - 22}" text-anchor="middle">This claim · ${fmt(cur.date_of_loss)}${cur.notification_date ? ' · notified ' + fmt(cur.notification_date) : ''}</text>`;
+  }
+  // claims lane: one diamond per claim at its date of loss
+  for (const c of claims) {
+    if (!c.date_of_loss) continue;
+    const xx = x(toT(c.date_of_loss));
+    const sel = state.sel === c.date_of_loss ? ' sel' : '';
+    s += `<rect class="clm${c.current ? ' this' : ''}${sel}" data-date="${c.date_of_loss}" x="${xx - 6}" y="${YC - 6}" width="12" height="12" transform="rotate(45 ${xx} ${YC})" tabindex="0" role="button" aria-label="Claim ${esc(c.claim_id)}, date of loss ${fmt(c.date_of_loss)}"><title>Claim ${esc(c.claim_id.slice(0, 8))}… · date of loss ${fmt(c.date_of_loss)}\n${esc(c.claim_types.join(', '))} · ${esc(c.outcome || 'not yet decided')}</title></rect>`;
+    if (!c.current) s += `<text class="lbl" x="${xx}" y="${YC + 22}" text-anchor="middle">${esc(shortType(c.claim_types[0]))}</text>`;
+  }
+  // visits lane: one dot per date, with a count when several visits fall on the same day
+  const byDate = new Map();
+  for (const v of visits) { if (!byDate.has(v.date)) byDate.set(v.date, []); byDate.get(v.date).push(v); }
+  for (const [date, vs] of byDate) {
+    const xx = x(toT(date));
+    const cls = ['dot', vs.some(isCurrent) ? 'this' : '', vs.some(v => v._flag) ? 'flag' : '', vs.some(v => onIds.has(v.id)) ? '' : 'off', state.sel === date ? 'sel' : ''].filter(Boolean).join(' ');
+    const r = vs.length > 1 ? 8 : 6;
+    s += `<circle class="${cls}" data-date="${date}" cx="${xx}" cy="${YV}" r="${r}" tabindex="0" role="button" aria-label="${vs.length} visit(s) on ${fmt(date)}"><title>${vs.map(v => `${v.id} · ${fmt(v.date)} · ${esc(v.clinic || '')}\n${esc(v.reason_for_visit || '')}`).join('\n')}</title></circle>`;
+    if (vs.length > 1) s += `<text class="n" x="${xx}" y="${YV + 3.5}" text-anchor="middle">${vs.length}</text>`;
+  }
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('width', W); svg.setAttribute('height', H);
+  svg.innerHTML = s;
+  svg.querySelectorAll('[data-date]').forEach(el => {
+    const go = () => { state.sel = el.dataset.date; renderAll(); document.getElementById('detail').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+  if (!state.scrolled) { state.scrolled = true; if (cur && cur.date_of_loss) wrap.scrollLeft = Math.max(0, x(toT(cur.date_of_loss)) - wrap.clientWidth * 0.7); }
+}
+function shortType(t) { return (t || '').replace(/^PET_/, '').toLowerCase().replace(/_/g, ' '); }
+
+// ---- detail for the selected date ----
+function renderDetail() {
+  const el = document.getElementById('detail');
+  if (!state.sel) { el.innerHTML = '<div class="empty">Click a visit on the timeline.</div>'; return; }
+  const vs = visits.filter(v => v.date === state.sel);
+  const cs = claims.filter(c => c.date_of_loss === state.sel);
+  let h = `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h3>${fmt(state.sel)}</h3><span class="mut">${vs.length} visit${vs.length === 1 ? '' : 's'}${cs.length ? ` · date of loss of ${cs.length} claim${cs.length === 1 ? '' : 's'}` : ''}</span></div>`;
+  for (const c of cs) h += claimCard(c);
+  if (!vs.length) h += '<div class="empty">No journal entry on this date.</div>';
+  for (const v of vs) h += visitCard(v);
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px">${h}</div>`;
+  el.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { state.sel = b.dataset.go; renderAll(); }));
+}
+function claimCard(c) {
+  return `<div class="visit"><div class="vh"><b>Claim ${esc(c.claim_id.slice(0, 8))}…</b>${c.current ? '<span class="badge b-this">This claim</span>' : ''}<span class="badge ${c.outcome === 'PAID_OUT' ? 'b-ok' : c.outcome ? 'b-warn' : ''}">${esc(c.outcome || 'not yet decided')}</span></div>
+  <div class="meta"><span>Date of loss ${fmt(c.date_of_loss)}</span><span>Notified ${fmt(c.notification_date)}</span><span>Claim type ${esc(c.claim_types.join(', ') || '—')}</span></div>
+  ${c.attachments && c.attachments.length ? `<div class="sect"><span class="sk">Files</span><ul>${c.attachments.map(a => `<li>${esc(a)}</li>`).join('')}</ul></div>` : ''}</div>`;
+}
+function rel(cr) {
+  if (!cr) return '';
+  const conf = cr.confidence === 'high' ? '' : ` · ${cr.confidence} confidence`;
+  return `<span class="badge b-acc" title="${esc(cr.primary_hedvig || '')}">${esc(cr.primary)}${conf}</span>${cr.note_sv ? `<span class="sv">${esc(cr.note_sv)}</span>` : ''}${(cr.terms_flags || []).map(f => `<span class="badge">${esc(f)}</span>`).join('')}`;
+}
+function visitCard(v) {
+  const ft = (R.follow_through || []);
+  const flags = v.review_flags.map(f => `<span class="badge ${FLAGS_WARN.includes(f) ? 'b-warn' : ''}">${esc(f)}</span>`).join('');
+  const claim = v._claim;
+  const sects = [];
+  if (v.reason_for_visit) sects.push(['Reason', `<div>${esc(v.reason_for_visit)}</div>`]);
+  if (v.symptoms.length) sects.push(['Symptoms', `<ul>${v.symptoms.map(s => `<li><span class="line">${esc(s.text)} <span class="badge">${esc(s.status)}</span>${s.onset_as_written ? `<span class="sv">onset: ${esc(s.onset_as_written)}</span>` : ''}${rel(s.claim_relevance)}</span>${s.text_sv ? `<span class="sv">${esc(s.text_sv)}</span>` : ''}<span class="q">${esc(s.source_quote)}</span></li>`).join('')}</ul>`]);
+  if (v.findings.length) sects.push(['Findings', `<ul>${v.findings.map(f => `<li><span class="line">${esc(f.text)}${f.is_negative ? '<span class="badge">negative finding</span>' : ''}</span>${f.text_sv ? `<span class="sv">${esc(f.text_sv)}</span>` : ''}${f.source_location ? `<span class="sv">${esc(f.source_location)}</span>` : ''}</li>`).join('')}</ul>`]);
+  if (v.diagnoses.length) sects.push(['Diagnoses', `<ul>${v.diagnoses.map(d => `<li><span class="line"><b>${esc(d.text)}</b><span class="badge ${d.status === 'confirmed' ? 'b-ok' : d.status === 'suspected' ? 'b-warn' : ''}">${esc(d.status)}</span>${rel(d.claim_relevance)}</span>${d.text_sv ? `<span class="sv">${esc(d.text_sv)}</span>` : ''}<span class="q">${esc(d.source_quote)}</span></li>`).join('')}</ul>`]);
+  if (v.procedures.length) sects.push(['Procedures', `<ul>${v.procedures.map(p => `<li><span class="line">${esc(p.text)}${p.result ? `<span class="sv">result: ${esc(p.result)}</span>` : ''}${rel(p.claim_relevance)}</span></li>`).join('')}</ul>`]);
+  if (v.medications.length) sects.push(['Medications', `<ul>${v.medications.map(m => `<li><span class="line">${esc(m.name)}${m.dose ? `<span class="sv">${esc(m.dose)}</span>` : ''}${m.duration ? `<span class="sv">${esc(m.duration)}</span>` : ''}${m.reason ? `<span class="sv">for ${esc(m.reason)}</span>` : ''}</span></li>`).join('')}</ul>`]);
+  if (v.vet_comments.length) sects.push(['Vet comments', `<ul>${v.vet_comments.map(c => `<li><span class="line"><span class="badge">${esc(c.type)}</span>${esc(c.text)}</span>${c.text_sv ? `<span class="sv">${esc(c.text_sv)}</span>` : ''}<span class="q">${esc(c.source_quote)}</span></li>`).join('')}</ul>`]);
+  if (v.instructions.length) sects.push(['Instructions', `<ul>${v.instructions.map(i => {
+    const f = ft.find(x => x.instruction_id === i.id);
+    const st = f ? f.status : 'no follow-through entry';
+    const cls = st === 'followed' ? 'b-ok' : st === 'no_evidence_in_record' ? '' : 'b-warn';
+    return `<li><span class="line"><span class="badge">${esc(i.id)}</span>${esc(i.what)}${i.by_when ? `<span class="sv">by ${esc(i.by_when)}</span>` : ''}<span class="badge ${cls}">${esc(st.replace(/_/g, ' '))}</span>${f && f.visit_id ? `<button class="chip" data-go="${esc((visits.find(x => x.id === f.visit_id) || {}).date || '')}">${esc(f.visit_id)} · ${fmt(f.date)}</button>` : ''}</span>${f && f.evidence_quote ? `<span class="q">${esc(f.evidence_quote)}</span>` : ''}${i.what_sv ? `<span class="sv">${esc(i.what_sv)}</span>` : ''}</li>`;
+  }).join('')}</ul>`]);
+  const groups = [...v._groups].map(id => `<span class="badge">${esc(GROUPS.find(g => g.id === id).name)}</span>`).join('');
+  return `<div class="visit">
+    <div class="vh"><b>${esc(v.id)} · ${esc(v.clinic || 'clinic unknown')}</b>${isCurrent(v) ? '<span class="badge b-this">This claim</span>' : ''}<span class="badge">${esc(v.visit_type || 'visit')}${v.channel && v.channel !== 'in_person' ? ' · ' + esc(v.channel) : ''}</span>${flags}${groups}</div>
+    <div class="meta">${v.veterinarian ? `<span>Vet ${esc(v.veterinarian)}</span>` : ''}${v.weight ? `<span>Weight ${esc(v.weight)}</span>` : ''}${v.cost ? `<span>Cost ${esc(v.cost)} kr</span>` : ''}${v.referral ? `<span>Referral ${esc(v.referral)}</span>` : ''}
+      <span>Source ${esc(v.source_file)}${v.source_file_name ? ' · ' + esc(v.source_file_name) : ''}${v.page ? ', p. ' + esc(v.page) : ''}</span>
+      ${claim ? `<span>Claim ${esc(claim.claim_id.slice(0, 8))}… (${esc(claim.claim_types.join(', '))}, ${esc(claim.outcome || 'open')}; matched by date of loss ${fmt(claim.date_of_loss)})</span>` : '<span>No claim with a date of loss on or before this visit</span>'}
+      ${v.date_precision !== 'day' ? `<span class="badge b-warn">date precision: ${esc(v.date_precision)}</span>` : ''}</div>
+    ${sects.map(([k, body]) => `<div class="sect"><span class="sk">${k}</span><div>${body}</div></div>`).join('')}
+  </div>`;
+}
+
+// ---- condition groups ----
+function renderGroups(on) {
+  const onIds = new Set(on.map(v => v.id));
+  const el = document.getElementById('groups');
+  const cards = GROUPS.map(g => {
+    const vs = visits.filter(v => v._groups.has(g.id));
+    if (!vs.length) return '';
+    const diags = [...new Set(vs.flatMap(v => v.diagnoses.filter(d => g.types.includes(d.claim_relevance.primary)).map(d => d.text)))];
+    const syms = [...new Set(vs.flatMap(v => v.symptoms.filter(s => g.types.includes(s.claim_relevance.primary)).map(s => s.text)))];
+    const anyOn = vs.some(v => onIds.has(v.id));
+    return `<div class="group${anyOn ? '' : ' off'}"><div class="gh"><b>${esc(g.name)}</b><span class="mut">${vs.length} visit${vs.length === 1 ? '' : 's'}</span></div>
+      <div class="mut" style="font-size:12.5px">${fmt(vs[0].date)}${vs.length > 1 ? ' to ' + fmt(vs[vs.length - 1].date) : ''}</div>
+      ${diags.length ? `<div style="font-size:13px"><b>Diagnoses:</b> ${esc(diags.join('; '))}</div>` : ''}
+      ${syms.length ? `<div style="font-size:12.5px" class="mut"><b>Symptoms:</b> ${esc(syms.slice(0, 4).join('; '))}${syms.length > 4 ? ` (+${syms.length - 4})` : ''}</div>` : ''}
+      <div class="chips">${vs.map(v => `<button class="chip${state.sel === v.date ? ' on' : ''}${onIds.has(v.id) ? '' : ' off'}" data-go="${v.date}" title="${fmt(v.date)}">${esc(v.id)}</button>`).join('')}</div></div>`;
+  }).join('');
+  el.innerHTML = cards || '<div class="empty">No visits.</div>';
+  el.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { state.sel = b.dataset.go; renderAll(); document.getElementById('detail').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }));
+}
+
+// ---- claims table ----
+function renderClaims() {
+  const t = document.getElementById('claimsTable');
+  if (!claims.length) { t.innerHTML = '<tr><td class="mut">No claims list in this record.</td></tr>'; return; }
+  t.innerHTML = `<tr><th>Date of loss</th><th>Notified</th><th>Claim type</th><th>Outcome</th><th>Visits</th><th>Files sent to the reader</th></tr>` + claims.map(c => {
+    const vs = visits.filter(v => v._claim === c);
+    return `<tr class="click${state.sel === c.date_of_loss ? ' sel' : ''}" data-go="${c.date_of_loss}"><td>${fmt(c.date_of_loss)}${c.current ? ' <span class="badge b-this">This claim</span>' : ''}</td><td>${fmt(c.notification_date)}</td><td>${esc(c.claim_types.join(', '))}</td><td><span class="badge ${c.outcome === 'PAID_OUT' ? 'b-ok' : c.outcome ? 'b-warn' : ''}">${esc(c.outcome || 'not yet decided')}</span></td><td>${vs.map(v => v.id).join(', ') || '—'}</td><td>${(c.attachments || []).length}</td></tr>`;
+  }).join('');
+  t.querySelectorAll('[data-go]').forEach(r => r.addEventListener('click', () => { state.sel = r.dataset.go; renderAll(); }));
+}
+
+// ---- files read ----
+function renderFiles() {
+  const t = document.getElementById('filesTable');
+  const metas = R.record_meta || [];
+  t.innerHTML = `<tr><th>Label</th><th>File</th><th>Animal</th><th>Chip</th><th>Clinic</th><th>Dates</th><th>Note</th><th>Flags</th></tr>` + metas.map(m => `<tr><td>${esc(m.source_file)}</td><td>${esc(m.source_file_name || (R.files || {})[m.source_file] || '')}</td><td>${esc(m.animal_name || '—')}</td><td>${esc(m.chip_number || '—')}</td><td>${esc((m.clinics || []).join(', '))}</td><td style="white-space:nowrap">${m.first_date ? fmt(m.first_date) + (m.last_date && m.last_date !== m.first_date ? ' to ' + fmt(m.last_date) : '') : '—'}</td><td>${esc(m.completeness_note || '')}</td><td>${(m.review_flags || []).map(f => `<span class="badge b-warn">${esc(f)}</span>`).join(' ')}</td></tr>`).join('');
+  const certs = R.certificates || [];
+  document.getElementById('certNote').innerHTML = certs.length ? '<b>Certificates:</b> ' + certs.map(c => `${esc(c.type || 'certificate')} · ${fmt(c.date)} · ${esc(c.clinic || '')} · ${esc(c.remarks_verbatim || '')} (${esc(c.source_location || '')})`).join(' | ') : '';
+}
+
+// ---- load another record.json ----
+document.getElementById('loadFile').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { try { setRecord(JSON.parse(r.result)); } catch (err) { document.getElementById('detail').innerHTML = `<div class="empty">Could not read that file: ${esc(err.message)}</div>`; } };
+  r.readAsText(f);
+});
+window.addEventListener('resize', () => { if (R && !state.ppd) renderAll(); });
+
+setRecord(JSON.parse(document.getElementById('record').textContent));
+})();
+</script>
